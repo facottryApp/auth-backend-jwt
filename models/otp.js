@@ -10,5 +10,5 @@ const otpSchema = new mongoose.Schema({
   },
 });
 
-outingSchema.index({ expiry: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 });
+otpSchema.index({ expiry: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 });
 export default mongoose.model.otps || mongoose.model("OTP", otpSchema);

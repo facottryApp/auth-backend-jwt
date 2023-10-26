@@ -4,23 +4,13 @@ import cors from "cors";
 import mongoose from "mongoose";
 import morgan from "morgan";
 import helmet from "helmet";
-import apiRouter from "./routes/apiRoutes.js";
-import { rateLimit } from "express-rate-limit";
+import router from "./router.js";
 
 // Const declarations
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT;
 const MONG_URI = process.env.MONG_URI;
-
-// Rate Limiter
-const limiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 120,
-  message: "Too many requests. IP blocked.",
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 // Middlewares
 const corsOptions = {
@@ -39,7 +29,6 @@ if (process.env.NODE_ENV === "production") app.set("trust proxy", 1);
 app.use(express.json());
 app.use(morgan("tiny"));
 app.use(helmet());
-app.use(limiter);
 
 // Database Connenction
 mongoose
@@ -62,4 +51,4 @@ app.get("/", (req, res) => {
   return res.send("FacOTTry");
 });
 
-app.use("/api", apiRouter);
+app.use("/api", router);
