@@ -9,6 +9,19 @@ import otpGenerator from "otp-generator";
 //LOGIN
 export const loginUser = async (req, res) => {
   try {
+    const authHeader = req.headers.authorization;
+
+    if (authHeader) {
+      const token = authHeader.split(" ")[1];
+      jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
+        if (error) {
+          return res.status(403).send(error);
+        }
+        req.user = decoded;
+        return res.status(200).json("Success");
+      });
+    }
+
     //Form Validation
     const loginSchema = Joi.object({
       email: Joi.string().required(),
@@ -95,13 +108,13 @@ export const sendOTP = async (req, res) => {
       specialChars: false,
     });
 
-    const expiresAt = new Date();
-    expiresAt.setSeconds(expiresAt.getSeconds() + 300); // 5 minutes expiration
+    const expiry = new Date();
+    expiry.setSeconds(expiry.getSeconds() + 300); // 5 minutes expiration
 
     const otpData = new OTPModel({
       email: req.body.email,
       otp,
-      expiresAt,
+      expiry,
     });
 
     await otpData.save();
@@ -146,12 +159,8 @@ export const verifyOTP = async (req, res) => {
       email: req.body.email,
     });
 
-    if (!req.session.otp || !req.session.otpExpiry || !req.session.email) {
-      return res.status(400).send("Not generated");
-    }
-
     if (!storedOTP) {
-      return res.status(401).send("OTP expired / Not generated");
+      return res.status(401).send("OTP not generated");
     }
 
     if (storedOTP.otp === userEnteredOTP) {
@@ -170,7 +179,6 @@ export const registerUser = async (req, res) => {
     //Request Body Validation
     const registerSchema = Joi.object({
       name: Joi.string().required(),
-      role: Joi.string().required().valid("admin", "user"),
       email: Joi.string().email().required(),
       password: Joi.string().pattern(
         new RegExp("^(?=.*[A-Za-z])(?=.*[0-9])[a-zA-Z0-9@$!%*#?&]{8,}$")
@@ -178,7 +186,7 @@ export const registerUser = async (req, res) => {
     });
     await registerSchema.validateAsync(req.body);
 
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
 
     // Hash password & save to mongoDB
     const hash = await bcrypt.hash(password, 10);
@@ -186,17 +194,12 @@ export const registerUser = async (req, res) => {
       name,
       email,
       password: hash,
-      role,
     });
     await newUser.save();
 
-    const accessToken = jwt.sign(
-      { name, email, role },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "24h",
-      }
-    );
+    const accessToken = jwt.sign({ name, email }, process.env.JWT_SECRET, {
+      expiresIn: "24h",
+    });
 
     return res.status(200).json({ email, accessToken });
   } catch (error) {
