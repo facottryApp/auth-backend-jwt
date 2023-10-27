@@ -12,7 +12,7 @@ router.post("/register", registerUser);
 
 //USER
 router.get("/", isAuth, (req, res) => {
-    return res.send("Logged in");
+    return res.status(200).send("AUTHORIZED");
   });
 
 export default router;
