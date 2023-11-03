@@ -178,7 +178,6 @@ export const registerUser = async (req, res) => {
   try {
     //Request Body Validation
     const registerSchema = Joi.object({
-      name: Joi.string().required(),
       email: Joi.string().email().required(),
       password: Joi.string().pattern(
         new RegExp("^(?=.*[A-Za-z])(?=.*[0-9])[a-zA-Z0-9@$!%*#?&]{8,}$")
@@ -186,18 +185,17 @@ export const registerUser = async (req, res) => {
     });
     await registerSchema.validateAsync(req.body);
 
-    const { name, email, password } = req.body;
+    const { email, password } = req.body;
 
     // Hash password & save to mongoDB
     const hash = await bcrypt.hash(password, 10);
     const newUser = new users({
-      name,
       email,
       password: hash,
     });
     await newUser.save();
 
-    const accessToken = jwt.sign({ name, email }, process.env.JWT_SECRET, {
+    const accessToken = jwt.sign({ email }, process.env.JWT_SECRET, {
       expiresIn: "24h",
     });
 

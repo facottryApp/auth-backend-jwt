@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     email: {
       type: String,
-      required: [true, "Provide Institute Email"],
+      required: [true, "Provide Email"],
       unique: [true, "Email already exists"],
     },
 
@@ -21,7 +21,12 @@ const userSchema = new mongoose.Schema(
     mobile: {
       type: Number,
       default: "",
-    }
+    },
+
+    address: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );
