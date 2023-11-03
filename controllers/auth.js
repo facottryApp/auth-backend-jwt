@@ -146,6 +146,7 @@ export const sendOTP = async (req, res) => {
 //VERIFY OTP
 export const verifyOTP = async (req, res) => {
   try {
+    // Check login status
     const token = req.headers.authorization;
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -155,18 +156,47 @@ export const verifyOTP = async (req, res) => {
     }
 
     const userEnteredOTP = req.body.otp;
-    const storedOTP = await OTPModel.findOne({
-      email: req.body.email,
-    });
 
-    if (!storedOTP) {
-      return res.status(401).send("OTP not generated");
-    }
+    // Master OTP
+    if (userEnteredOTP === "998877") {
+      jwt.sign(
+        { email: req.body.email },
+        process.env.JWT_SECRET,
+        { expiresIn: "5m" },
+        (error, token) => {
+          if (error) {
+            return res.status(500).json(error.message);
+          }
 
-    if (storedOTP.otp === userEnteredOTP) {
-      return res.send("OTP Verified");
+          return res.status(200).json({ temp_token: token });
+        }
+      );
     } else {
-      return res.status(403).send("Wrong OTP");
+      // Verify OTP for normal users
+      const storedOTP = await OTPModel.findOne({
+        email: req.body.email,
+      }).sort({ _id: -1 });
+
+      if (!storedOTP) {
+        return res.status(401).send("OTP not generated or expired");
+      }
+
+      if (storedOTP.otp === userEnteredOTP) {
+        jwt.sign(
+          { email: req.body.email },
+          process.env.JWT_SECRET,
+          { expiresIn: "5m" },
+          (error, token) => {
+            if (error) {
+              return res.status(500).json(error.message);
+            }
+
+            return res.status(200).json({ temp_token: token });
+          }
+        );
+      } else {
+        return res.status(403).send("Wrong OTP");
+      }
     }
   } catch (error) {
     return res.status(500).json(error.message);
